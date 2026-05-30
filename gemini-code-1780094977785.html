@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Torn War Hit Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --bg2: #10141a;
+    --bg3: #161c24;
+    --bg4: #1d2530;
+    --border: rgba(0,255,170,0.12);
+    --border2: rgba(0,255,170,0.25);
+    --accent: #00ffaa;
+    --accent2: #00c87a;
+    --accent-dim: rgba(0,255,170,0.08);
+    --red: #ff4a4a;
+    --red-dim: rgba(255,74,74,0.12);
+    --amber: #ffb74a;
+    --amber-dim: rgba(255,183,74,0.1);
+    --blue: #4ab0ff;
+    --blue-dim: rgba(74,176,255,0.1);
+    --text: #c8d4e0;
+    --text-dim: #5a6a7a;
+    --mono: 'Share Tech Mono', monospace;
+    --display: 'Rajdhani', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--display);
+    font-size: 15px;
+    min-height: 100vh;
+  }
+  body::before {
+    content:'';
+    position:fixed;
+    inset:0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-icon {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-size: 18px;
+    background: var(--accent-dim);
+  }
+  .header h1 {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .header-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+  .header-controls { 
+    display: flex; 
+    align-items: center; 
+    gap: 16px; 
+    font-family: var(--mono); 
+    font-size: 11px; 
+    color: var(--text-dim); 
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    animation: pulse-dot 2s ease-in-out infinite;
+    display: inline-block;
+  }
+  .status-dot.live { background: var(--accent); }
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  main { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
+
+  .config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field-group label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .field-group input[type="text"], 
+  .field-group input[type="password"], 
+  .field-group input[type="number"], 
+  .field-group input[type="datetime-local"], 
+  .field-group select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    width: 100%;
+    color-scheme: dark;
+  }
+  .field-group input:focus, .field-group select:focus {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .field-group input::placeholder { color: var(--text-dim); }
+  .field-group.span2 { grid-column: span 2; }
+  .field-group.span3 { grid-column: span 3; }
+
+  /* Advanced Filters Flex Containers */
+  .advanced-filters {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .profit-toggles-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  /* Slider Styling */
+  .slider-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    height: 40px;
+  }
+  .slider-container input[type="range"] {
+    flex: 1;
+    accent-color: var(--accent);
+    cursor: pointer;
+    background: var(--bg4);
+    height: 6px;
+    border-radius: 3px;
+    outline: none;
+  }
+  .slider-val {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--accent);
+    min-width: 28px;
+    text-align: right;
+  }
+
+  /* Segmented Toggle Box Styling */
+  .toggle-box {
+    display: inline-flex;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px;
+    overflow: hidden;
+  }
+  .toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 16px;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .toggle-btn:hover {
+    color: var(--text);
+  }
+  .toggle-btn.active {
+    background: var(--accent);
+    color: #050f0a;
+    font-weight: bold;
+  }
+
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .checkbox-group input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+  .checkbox-group span {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  /* Inline Mini Control Form Elements */
+  .inline-input-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 8px;
+    height: 28px;
+  }
+  .inline-input-group label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .inline-input-group input[type="number"] {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12px;
+    width: 40px;
+    text-align: center;
+    outline: none;
+  }
+
+  .btn-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .btn {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 11px 24px;
+    border-radius: 6px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #050f0a;
+    border-color: var(--accent);
+  }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); transform: translateY(-1px); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-dim);
+    border-color: var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--border2); color: var(--text); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-loading::after {
+    content: '';
+    width: 14px; height: 14px;
+    border: 2px solid rgba(5,15,10,0.3);
+    border-top-color: #050f0a;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .alert {
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    margin-bottom: 20px;
+    display: none;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .alert.show { display: flex; }
+  .alert-error { background: var(--red-dim); border: 1px solid var(--red); color: var(--red); }
+  .alert-info { background: var(--accent-dim); border: 1px solid var(--border); color: var(--accent); }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .metric-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+  .metric-card.red::before { background: var(--red); }
+  .metric-card.amber::before { background: var(--amber); }
+  .metric-card.blue::before { background: var(--blue); }
+  .metric-card:hover { border-color: var(--border2); }
+  .metric-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .metric-value {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1.1;
+  }
+  .metric-card.red .metric-value { color: var(--red); }
+  .metric-card.amber .metric-value { color: var(--amber); }
+  .metric-card.blue .metric-value { color: var(--blue); }
+  .metric-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-header h2 {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .section-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: var(--accent-dim);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .charts-row-3 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .chart-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .chart-canvas-wrap { position: relative; height: 220px; width: 100%; }
+  .outcome-wrap { display: flex; gap: 24px; align-items: center; }
+
+  .profit-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .profit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    align-items: end;
+  }
+  .profit-result {
+    background: var(--bg4);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .profit-result-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .profit-result-value {
+    font-family: var(--mono);
+    font-size: 28px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .profit-breakdown {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.8;
+  }
+
+  .log-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .log-table-wrap { 
+    max-height: 280px; 
+    overflow-y: auto; 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch; 
+  }
+  .log-table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+  .log-table-wrap::-webkit-scrollbar-track { background: var(--bg); }
+  .log-table-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  .log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .log-table th {
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    padding: 0 12px 10px;
+    text-transform: uppercase;
+    position: sticky;
+    top: 0;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+  }
+  .log-table td {
+    padding: 8px 12px;
+    color: var(--text);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    white-space: nowrap;
+  }
+  .log-table tr:hover td { background: var(--accent-dim); }
+  .win-badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .win { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--border); }
+  .lose { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,74,74,0.2); }
+  .escape { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,183,74,0.2); }
+  .mug { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(74,176,255,0.2); }
+
+  .rebar-wrap { display: flex; flex-direction: column; gap: 4px; }
+  .rebar-row { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 11px; }
+  .rebar-label { width: 80px; color: var(--text-dim); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; flex-shrink: 0; }
+  .rebar-track { flex: 1; height: 14px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
+  .rebar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width 0.6s cubic-bezier(0.22,1,0.36,1); }
+  .rebar-val { width: 52px; text-align: right; color: var(--text); flex-shrink: 0; }
+
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 1px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .empty-icon { font-size: 36px; opacity: 0.2; }
+
+  #dashboard { display: none; }
+
+  /* Responsive Adjustments */
+  @media (max-width: 1100px) {
+    .metrics-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 900px) {
+    main { padding: 16px; }
+    .config-grid { grid-template-columns: 1fr 1fr; }
+    .charts-row, .charts-row-3 { grid-template-columns: 1fr; }
+    .profit-grid { grid-template-columns: 1fr 1fr; }
+  }
+  /* Core Mobile Optimization */
+  @media (max-width: 600px) {
+    .config-grid { grid-template-columns: 1fr; }
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    .profit-grid { grid-template-columns: 1fr; }
+    
+    .header { flex-direction: column; align-items: flex-start; gap: 16px; padding: 16px; }
+    .header-controls { flex-direction: column; align-items: flex-start; gap: 12px; width: 100%; }
+    
+    .advanced-filters { flex-direction: column; align-items: flex-start; gap: 16px; width: 100%; }
+    .profit-toggles-wrap { width: 100%; }
+    
+    .toggle-box { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px; border-radius: 8px; width: 100%; }
+    .toggle-btn { border-radius: 4px; padding: 10px; }
+    
+    .btn-row { flex-direction: column; gap: 10px; }
+    .btn { width: 100%; justify-content: center; }
+    
+    .outcome-wrap { flex-direction: column; align-items: center; }
+  }
+
+  @keyframes glitch {
+    0%,100% { text-shadow: none; }
+    2% { text-shadow: 2px 0 var(--red), -2px 0 var(--blue); }
+    4% { text-shadow: none; }
+    8% { text-shadow: -1px 0 var(--accent), 1px 0 var(--red); }
+    10% { text-shadow: none; }
+  }
+  .header h1 { animation: glitch 8s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">
+    <div class="header-icon">⚔</div>
+    <div>
+      <h1>War Hit Calculator</h1>
+      <div class="header-sub">TORN CITY · FACTION OPERATIONS DASHBOARD</div>
+    </div>
+  </div>
+  <div class="header-controls">
+    <div style="display:flex;align-items:center;gap:8px;background:var(--bg3);padding:4px 10px;border-radius:20px;border:1px solid var(--border);">
+      <label class="checkbox-group" style="margin:0;">
+        <input type="checkbox" id="liveRefreshToggle" onchange="toggleLiveRefresh()">
+        <span style="font-size:11px;letter-spacing:1px;text-transform:uppercase;">Live Auto Refresh</span>
+      </label>
+      <span id="liveCountdownDisplay" style="color:var(--accent);display:none;font-weight:bold;margin-left:4px;">(60s)</span>
+    </div>
+    
+    <div style="display:flex;align-items:center;gap:8px;min-width:100px;">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">STANDBY</span>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:24px;">
+    <div class="section-header" style="margin-bottom:20px;">
+      <h2>Configuration</h2>
+      <span class="section-badge">REQUIRED</span>
+    </div>
+    <div class="config-grid">
+      <div class="field-group span2">
+        <label>API Key</label>
+        <input type="password" id="apiKey" placeholder="Your Torn API key (full access needed)">
+      </div>
+      <div class="field-group">
+        <label>Target Faction ID (Filter)</label>
+        <input type="number" id="targetFactionId" placeholder="Leave blank for all">
+      </div>
+      <div class="field-group">
+        <label>Time Mode</label>
+        <select id="timeMode" onchange="toggleTimeMode()">
+          <option value="war">War start + now</option>
+          <option value="custom">Custom range</option>
+        </select>
+      </div>
+      <div class="field-group" id="warStartGroup">
+        <label id="startLabel">War Start Date</label>
+        <input type="datetime-local" id="warStart">
+      </div>
+      <div class="field-group" id="warEndGroup" style="display:none;">
+        <label>Custom End Date</label>
+        <input type="datetime-local" id="customEnd">
+      </div>
+      
+      <div class="field-group" style="grid-column: span 3; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 6px;">
+        <label>Advanced Filters & Interval Parameters</label>
+        <div class="advanced-filters">
+          <label class="checkbox-group">
+            <input type="checkbox" id="excludeEscapes">
+            <span>Exclude Escapes / Timeouts</span>
+          </label>
+          <label class="checkbox-group">
+            <input type="checkbox" id="excludeAssists">
+            <span>Exclude Assists</span>
+          </label>
+          <label class="checkbox-group">
+            <input type="checkbox" id="includeLosses">
+            <span>Include Lost Attacks (from Logs)</span>
+          </label>
+          
+          <div class="inline-input-group">
+            <label for="refreshIntervalInput">Refresh Every:</label>
+            <input type="number" id="refreshIntervalInput" value="60" min="5" max="3600" oninput="updateRefreshIntervalVal()">
+            <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;">Secs</span>
+          </div>
+          
+          <div class="profit-toggles-wrap">
+            <span style="font-family: var(--mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">Include in profit calculation</span>
+            <div class="toggle-box">
+              <button type="button" class="toggle-btn" data-outcome="mugged" onclick="toggleProfitFilter(this)">Mugged</button>
+              <button type="button" class="toggle-btn" data-outcome="escape" onclick="toggleProfitFilter(this)">Escape</button>
+              <button type="button" class="toggle-btn" data-outcome="assist" onclick="toggleProfitFilter(this)">Assist</button>
+              <button type="button" class="toggle-btn" data-outcome="lost" onclick="toggleProfitFilter(this)">Lost Attack</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-group span2">
+        <label>Limit (max attacks to fetch)</label>
+        <div class="slider-container">
+          <input type="range" id="fetchLimit" min="1" max="100" value="100" oninput="updateSliderVal(this.value)">
+          <span class="slider-val" id="sliderVal">100</span>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Pay Per Hit ($)</label>
+        <input type="number" id="payPerHit" placeholder="e.g. 1000000" min="0">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="fetchBtn" onclick="fetchData()">⚔ Fetch War Data</button>
+      <button class="btn btn-secondary" onclick="confirmClearConfig()">✕ Clear Config</button>
+      <button class="btn btn-secondary" onclick="clearResultsOnly()">✕ Clear Results</button>
+      <button class="btn btn-secondary" onclick="showHelp()">? Help</button>
+    </div>
+    <div class="alert alert-error" id="alertError">
+      <span>⚠</span>
+      <span id="alertErrorText"></span>
+    </div>
+    <div class="alert alert-info" id="alertInfo">
+      <span>ℹ</span>
+      <span id="alertInfoText"></span>
+    </div>
+  </div>
+
+  <div id="emptyState" class="empty-state">
+    <div class="empty-icon">⚔</div>
+    <div>Enter your API key, faction target, and war dates to load data</div>
+    <div style="font-size:11px;color:var(--text-dim)">Data is fetched directly from Torn API — nothing is stored externally</div>
+  </div>
+
+  <div id="dashboard">
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Total Hits</div>
+        <div class="metric-value" id="mHits">—</div>
+        <div class="metric-sub" id="mHitsSub">war attacks</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Avg Respect/Hit</div>
+        <div class="metric-value" id="mAvgResp">—</div>
+        <div class="metric-sub">per attack</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Total Respect</div>
+        <div class="metric-value" id="mTotalResp">—</div>
+        <div class="metric-sub">earned in war</div>
+      </div>
+      <div class="metric-card red">
+        <div class="metric-label">Total Energy</div>
+        <div class="metric-value" id="mEnergy">—</div>
+        <div class="metric-sub">at 25E per hit</div>
+      </div>
+      
+      <div class="metric-card red" id="energyWastedCard">
+        <div class="metric-label">Energy Wasted</div>
+        <div class="metric-value" id="mWastedEnergy">—</div>
+        <div class="metric-sub" id="mWastedEnergySub">unprofitable hits</div>
+      </div>
+      
+      <div class="metric-card blue" id="energyUtilizedCard">
+        <div class="metric-label">Energy Utilised</div>
+        <div class="metric-value" id="mUtilizedEnergy">—</div>
+        <div class="metric-sub" id="mUtilizedEnergySub">monetised hits</div>
+      </div>
+
+      <div class="metric-card amber">
+        <div class="metric-label">Win Rate</div>
+        <div class="metric-value" id="mWinRate">—</div>
+        <div class="metric-sub" id="mWinRateSub">wins / losses</div>
+      </div>
+      <div class="metric-card blue">
+        <div class="metric-label">Time Active</div>
+        <div class="metric-value" id="mTimeSpan">—</div>
+        <div class="metric-sub">first to last hit</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-box">
+        <div class="section-header">
+          <h2>Hits Over Time</h2>
+          <span class="section-badge" id="hitsChartLabel">—</span>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="hitsChart" role="img" aria-label="Hits over time bar chart">Hits over time data.</canvas>
+        </div>
+      </div>
+      <div class="chart-box">
+        <div class="section-header">
+          <h2>Respect Over Time</h2>
+          <span class="section-badge" id="respChartLabel">—</span>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="respChart" role="img" aria-label="Respect gained over time">Respect over time data.</canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-row-3">
+      <div class="chart-box">
+        <div class="section-header">
+          <h2>Attack Outcomes</h2>
+          <span class="section-badge">BREAKDOWN</span>
+        </div>
+        <div class="outcome-wrap">
+          <div class="chart-canvas-wrap" style="height:200px;width:200px;flex-shrink:0;">
+            <canvas id="outcomeChart" role="img" aria-label="Attack outcome breakdown donut chart">Attack outcome distribution.</canvas>
+          </div>
+          <div id="outcomeLegend" style="flex:1; width:100%;"></div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <div class="section-header">
+          <h2>Respect per Hit</h2>
+          <span class="section-badge">DISTRIBUTION</span>
+        </div>
+        <div class="chart-canvas-wrap" style="height:200px;">
+          <canvas id="respDistChart" role="img" aria-label="Distribution of respect per hit">Respect per hit distribution.</canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-box" style="margin-bottom:20px;">
+      <div class="section-header">
+        <h2>Top Targets by Respect</h2>
+        <span class="section-badge">TOP 15</span>
+      </div>
+      <div class="rebar-wrap" id="targetBars"></div>
+    </div>
+
+    <div class="profit-card">
+      <div class="section-header" style="margin-bottom:20px;">
+        <h2>Profit Calculator</h2>
+        <span class="section-badge">⚡ LIVE</span>
+      </div>
+      <div class="profit-grid">
+        <div class="field-group">
+          <label>Pay Per Hit ($)</label>
+          <input type="number" id="payPerHitCalc" placeholder="e.g. 1000000" min="0" oninput="recalcProfit()">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:4px;">Your faction's payout per war hit</div>
+        </div>
+        <div class="field-group">
+          <label>Bonus Per Win ($)</label>
+          <input type="number" id="bonusPerWin" placeholder="0" min="0" oninput="recalcProfit()">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:4px;">Optional bonus for winning attacks</div>
+        </div>
+        <div class="profit-result">
+          <div class="profit-result-label">Total Payout</div>
+          <div class="profit-result-value" id="profitValue">$0</div>
+          <div class="profit-breakdown" id="profitBreakdown">Enter pay per hit above</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="log-box">
+      <div class="section-header">
+        <h2>Attack Log</h2>
+        <span class="section-badge" id="logCount">0 ENTRIES</span>
+      </div>
+      <div class="log-table-wrap">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Target</th>
+              <th>Result</th>
+              <th>Respect</th>
+              <th>Modifiers</th>
+              <th>Fair Fight</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+let charts = {};
+let attackData = [];
+let activeProfitOutcomes = new Set();
+
+// Auto Refresh Execution State Variables
+let refreshTimerId = null;
+let refreshCountdownId = null;
+let currentSecondsLeft = 60;
+
+// Centralized configuration IDs for persistent saving/clearing
+const configIds = [
+  'apiKey', 'targetFactionId', 'timeMode', 'warStart', 'customEnd', 
+  'fetchLimit', 'payPerHit', 'payPerHitCalc', 'bonusPerWin', 'excludeEscapes', 
+  'excludeAssists', 'includeLosses', 'refreshIntervalInput', 'liveRefreshToggle'
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+  configIds.forEach(id => {
+    const val = localStorage.getItem('torn_' + id);
+    const el = document.getElementById(id);
+    if (val !== null && el) {
+      if (el.type === 'checkbox') el.checked = val === 'true';
+      else {
+        el.value = val;
+        if (id === 'fetchLimit') updateSliderVal(val);
+      }
+    }
+
+    if (el) {
+      el.addEventListener('input', (e) => {
+        const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+        localStorage.setItem('torn_' + id, value);
+        
+        // Auto trigger API discovery script if key length hits 16
+        if (id === 'apiKey' && e.target.value.trim().length === 16) {
+          autoDiscoverWarStart(e.target.value.trim());
+        }
+      });
+    }
+  });
+
+  // Load saved profit outcomes
+  const savedProfitOutcomes = localStorage.getItem('torn_profitOutcomes');
+  if (savedProfitOutcomes) {
+    JSON.parse(savedProfitOutcomes).forEach(outcome => {
+      activeProfitOutcomes.add(outcome);
+      const btn = document.querySelector(`.toggle-btn[data-outcome="${outcome}"]`);
+      if (btn) btn.classList.add('active');
+    });
+  }
+
+  toggleTimeMode();
+  
+  // Kick off dynamic updates if toggle was active on reload
+  if (document.getElementById('liveRefreshToggle').checked) {
+    toggleLiveRefresh();
+  }
+});
+
+function updateSliderVal(val) {
+  document.getElementById('sliderVal').textContent = val;
+}
+
+function toggleProfitFilter(btn) {
+  const outcome = btn.getAttribute('data-outcome');
+  if (btn.classList.contains('active')) {
+    btn.classList.remove('active');
+    activeProfitOutcomes.delete(outcome);
+  } else {
+    btn.classList.add('active');
+    activeProfitOutcomes.add(outcome);
+  }
+  
+  localStorage.setItem('torn_profitOutcomes', JSON.stringify([...activeProfitOutcomes]));
+  
+  if (attackData.length > 0) {
+    recalcProfit();
+  } else if (document.getElementById('apiKey').value.trim()) {
+    fetchData();
+  }
+}
+
+function toggleLiveRefresh() {
+  const isEnabled = document.getElementById('liveRefreshToggle').checked;
+  localStorage.setItem('torn_liveRefreshToggle', isEnabled);
+  
+  clearInterval(refreshTimerId);
+  clearInterval(refreshCountdownId);
+  refreshTimerId = null;
+  refreshCountdownId = null;
+
+  const display = document.getElementById('liveCountdownDisplay');
+  
+  if (!isEnabled) {
+    display.style.display = 'none';
+    if (document.getElementById('statusText').textContent.includes('REFRESHING')) {
+      setStatus('STANDBY', false);
+    }
+    return;
+  }
+
+  let intervalSecs = parseInt(document.getElementById('refreshIntervalInput').value) || 60;
+  if (intervalSecs < 5) intervalSecs = 5;
+  
+  currentSecondsLeft = intervalSecs;
+  display.textContent = `(${currentSecondsLeft}s)`;
+  display.style.display = 'inline-block';
+
+  refreshCountdownId = setInterval(() => {
+    currentSecondsLeft--;
+    if (currentSecondsLeft <= 0) {
+      display.textContent = '(CYCLING)';
+    } else {
+      display.textContent = `(${currentSecondsLeft}s)`;
+    }
+  }, 1000);
+
+  refreshTimerId = setInterval(async () => {
+    if (document.getElementById('apiKey').value.trim()) {
+      setStatus('AUTO REFRESHING…', true);
+      await fetchData(true);
+      currentSecondsLeft = parseInt(document.getElementById('refreshIntervalInput').value) || 60;
+      if (currentSecondsLeft < 5) currentSecondsLeft = 5;
+    }
+  }, intervalSecs * 1000);
+}
+
+function updateRefreshIntervalVal() {
+  let val = parseInt(document.getElementById('refreshIntervalInput').value) || 60;
+  localStorage.setItem('torn_refreshIntervalInput', val);
+  
+  if (document.getElementById('liveRefreshToggle').checked) {
+    toggleLiveRefresh();
+  }
+}
+
+function toggleTimeMode() {
+  const mode = document.getElementById('timeMode').value;
+  localStorage.setItem('torn_timeMode', mode);
+  const startLabel = document.getElementById('startLabel');
+  if (mode === 'war') {
+    if (startLabel) startLabel.textContent = 'War Start Date';
+    document.getElementById('warEndGroup').style.display = 'none';
+  } else {
+    if (startLabel) startLabel.textContent = 'Custom Start Date';
+    document.getElementById('warEndGroup').style.display = '';
+  }
+}
+
+function setStatus(text, live) {
+  document.getElementById('statusText').textContent = text;
+  document.getElementById('statusDot').className = 'status-dot' + (live ? ' live' : '');
+}
+
+function showError(msg) {
+  const el = document.getElementById('alertError');
+  document.getElementById('alertErrorText').textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 7000);
+}
+
+function showInfo(msg) {
+  const el = document.getElementById('alertInfo');
+  document.getElementById('alertInfoText').textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+function showHelp() {
+  showInfo('Go to torn.com → Preferences → API Keys → create a key with at least "Attacks" access. The filter uses the defenders Faction ID.');
+}
+
+async function autoDiscoverWarStart(apiKey) {
+  setStatus('SCANNING FOR RANKED WAR…', true);
+  let url = `https://api.torn.com/v2/user/events?striptags=true&limit=100&key=${apiKey}`;
+  
+  try {
+    while (url) {
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      if (data.error) {
+        console.error("Discovery error:", data.error);
+        break;
+      }
+      
+      const events = data.events || [];
+      const warEvent = events.find(e => e.event && e.event.includes("The ranked war between"));
+      
+      if (warEvent) {
+        const date = new Date(warEvent.timestamp * 1000);
+        const tzOffset = date.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 16);
+        
+        document.getElementById('warStart').value = localISOTime;
+        localStorage.setItem('torn_warStart', localISOTime);
+        showInfo('Auto-filled Ranked War beginning timestamp from logs!');
+        break;
+      }
+      
+      url = data._metadata?.links?.prev || null;
+    }
+  } catch (e) {
+    console.error("Error matching war timestamp:", e);
+  }
+  setStatus('STANDBY', false);
+}
+
+function confirmClearConfig() {
+  if (confirm('Are you sure you want to completely wipe all saved settings and API credentials?')) {
+    configIds.forEach(id => {
+      localStorage.removeItem('torn_' + id);
+      const el = document.getElementById(id);
+      if (el) {
+        if (el.type === 'checkbox') el.checked = false;
+        else if (el.tagName === 'SELECT') el.selectedIndex = 0;
+        else {
+          if (id === 'fetchLimit') el.value = 100;
+          else if (id === 'refreshIntervalInput') el.value = 60;
+          else el.value = '';
+        }
+      }
+    });
+    
+    activeProfitOutcomes.clear();
+    localStorage.setItem('torn_profitOutcomes', JSON.stringify([]));
+    document.querySelectorAll('.toggle-box .toggle-btn').forEach(b => b.classList.remove('active'));
+    
+    updateSliderVal(100);
+    toggleTimeMode();
+    
+    // Shut down any active interval loops
+    const autoRefreshToggle = document.getElementById('liveRefreshToggle');
+    if (autoRefreshToggle) {
+       autoRefreshToggle.checked = false;
+       toggleLiveRefresh();
+    }
+
+    clearResultsOnly();
+    showInfo('Configuration reset complete. All settings cleared.');
+  }
+}
+
+function clearResultsOnly() {
+  attackData = [];
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'flex';
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+  
+  if (!document.getElementById('liveRefreshToggle').checked) {
+    setStatus('STANDBY', false);
+  }
+  showInfo('Cleared performance dashboard and logs.');
+}
+
+async function fetchData(isBackgroundAutoCall = false) {
+  const key = document.getElementById('apiKey').value.trim();
+  if (!key) { 
+    if (!isBackgroundAutoCall) showError('API key is required.'); 
+    return; 
+  }
+
+  const mode = document.getElementById('timeMode').value;
+  let fromTs, toTs;
+
+  const warStartVal = document.getElementById('warStart').value;
+  if (!warStartVal) { 
+    if (!isBackgroundAutoCall) showError('Start date is required.'); 
+    return; 
+  }
+  fromTs = Math.floor(new Date(warStartVal).getTime() / 1000);
+
+  if (mode === 'war') {
+    toTs = Math.floor(Date.now() / 1000);
+  } else {
+    const customEndVal = document.getElementById('customEnd').value;
+    toTs = customEndVal ? Math.floor(new Date(customEndVal).getTime() / 1000) : Math.floor(Date.now() / 1000);
+  }
+
+  const limit = document.getElementById('fetchLimit').value;
+  const btn = document.getElementById('fetchBtn');
+  
+  if (!isBackgroundAutoCall) {
+    btn.disabled = true;
+    btn.classList.add('btn-loading');
+    btn.textContent = '';
+    setStatus('FETCHING…', true);
+  }
+
+  try {
+    const url = `https://api.torn.com/v2/user/attacks?filters=outgoing&limit=${limit}&from=${fromTs}&to=${toTs}&comment=TornCityWarCalculator&key=${key}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.error) {
+      showError(`Torn API error ${data.error.code}: ${data.error.error || data.error}`);
+      setStatus('ERROR', false);
+      return;
+    }
+
+    let attacks = data.attacks || [];
+
+    const defenderFactionMap = {};
+    attacks.forEach(a => {
+      const dId = a.defender?.id || a.defender_id;
+      const fId = a.defender?.faction?.id || a.defender_faction;
+      if (dId && fId) {
+        defenderFactionMap[String(dId)] = String(fId);
+      }
+    });
+
+    if (document.getElementById('includeLosses').checked) {
+      try {
+        const logUrl = `https://api.torn.com/user/?selections=log&log=8100&from=${fromTs}&to=${toTs}&key=${key}`;
+        const logRes = await fetch(logUrl);
+        const logData = await logRes.json();
+        if (logData && logData.log) {
+          Object.values(logData.log).forEach(entry => {
+            const defId = entry.data?.defender || entry.data?.target || entry.data?.user2 || '';
+            const defName = entry.data?.defender_name || entry.data?.target_name || entry.data?.name || (defId ? `ID: ${defId}` : 'Unknown');
+            
+            const lossAttack = {
+              started: entry.timestamp,
+              result: 'Lost',
+              respect_gain: 0,
+              defender: { id: defId, name: defName },
+              modifiers: { fair_fight: 1, war: 1 },
+              defender_faction: defenderFactionMap[String(defId)] || ''
+            };
+            attacks.push(lossAttack);
+          });
+        }
+      } catch (logErr) {
+        console.error("Failed to fetch loss logs:", logErr);
+      }
+    }
+
+    const reqFacId = document.getElementById('targetFactionId').value.trim();
+    const noEsc = document.getElementById('excludeEscapes').checked;
+    const noAss = document.getElementById('excludeAssists').checked;
+
+    attackData = attacks.filter(a => {
+      if (reqFacId) {
+        const defFacId = a.defender?.faction?.id || a.defender_faction;
+        if (defFacId && String(defFacId) !== reqFacId) return false;
+      }
+      
+      const resName = (a.result || '').toLowerCase();
+      
+      if (noEsc && (resName === 'escape' || resName === 'timeout' || resName === 'interrupted')) return false;
+      if (noAss && (resName === 'assist' || (a.modifiers && a.modifiers.group < 1))) return false;
+
+      return true;
+    });
+
+    if (!attackData.length) {
+      showError('No attacks matched your faction or exclusion filters.');
+      setStatus('NO VALID HITS', false);
+      return;
+    }
+
+    renderDashboard(attackData, fromTs, toTs);
+    if (!isBackgroundAutoCall) {
+      showInfo(`Loaded ${attackData.length} valid attack${attackData.length > 1 ? 's' : ''} after filtering.`);
+    }
+    setStatus('LIVE · ' + attackData.length + ' VALID HITS', true);
+
+  } catch(e) {
+    showError('Network error: ' + e.message);
+    setStatus('ERROR', false);
+  } finally {
+    if (!isBackgroundAutoCall) {
+      btn.disabled = false;
+      btn.classList.remove('btn-loading');
+      btn.innerHTML = '⚔ Fetch War Data';
+    }
+  }
+}
+
+function formatMoney(n) {
+  if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + n.toLocaleString();
+}
+
+function formatTime(ts) {
+  return new Date(ts * 1000).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+}
+
+function fmtDuration(secs) {
+  if (secs < 60) return secs + 's';
+  if (secs < 3600) return Math.round(secs/60) + 'm';
+  if (secs < 86400) return (secs/3600).toFixed(1) + 'h';
+  return (secs/86400).toFixed(1) + 'd';
+}
+
+function resultClass(result) {
+  const r = (result || '').toLowerCase();
+  if (r === 'attacked' || r === 'hospitalised' || r === 'special' || r === 'assist') return 'win';
+  if (r === 'lost' || r === 'arrested') return 'lose';
+  if (r === 'escape' || r === 'timeout' || r === 'interrupted') return 'escape';
+  if (r === 'mugged') return 'mug';
+  return 'win';
+}
+
+function isWin(result) {
+  return resultClass(result) === 'win' || resultClass(result) === 'mug';
+}
+
+function renderDashboard(attacks, fromTs, toTs) {
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('emptyState').style.display = 'none';
+
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  attacks.sort((a,b) => a.started - b.started);
+
+  const totalHits = attacks.length;
+  const totalResp = attacks.reduce((s,a) => s + (a.respect_gain || 0), 0);
+  const avgResp = totalHits ? totalResp / totalHits : 0;
+  const energy = totalHits * 25;
+  
+  // Literal game wins/losses for the Win Rate card only
+  const wins = attacks.filter(a => isWin(a.result)).length;
+  const losses = totalHits - wins;
+  const winRate = totalHits ? ((wins / totalHits) * 100).toFixed(1) : 0;
+  
+  const firstTs = attacks[0]?.started || fromTs;
+  const lastTs = attacks[attacks.length-1]?.started || toTs;
+  const timeSpan = lastTs - firstTs;
+
+  document.getElementById('mHits').textContent = totalHits.toLocaleString();
+  document.getElementById('mAvgResp').textContent = avgResp.toFixed(2);
+  document.getElementById('mTotalResp').textContent = totalResp.toFixed(2);
+  document.getElementById('mEnergy').textContent = energy.toLocaleString() + 'E';
+  
+  document.getElementById('mWinRate').textContent = winRate + '%';
+  document.getElementById('mWinRateSub').textContent = `${wins} wins / ${losses} losses`;
+  document.getElementById('mTimeSpan').textContent = fmtDuration(timeSpan);
+
+  const spanHours = timeSpan / 3600;
+  const bucketSize = spanHours > 72 ? 86400 : 3600;
+  const bucketLabel = bucketSize === 86400 ? 'd' : 'h';
+  const buckets = {};
+  attacks.forEach(a => {
+    const b = Math.floor(a.started / bucketSize) * bucketSize;
+    if (!buckets[b]) buckets[b] = { count: 0, respect: 0 };
+    buckets[b].count++;
+    buckets[b].respect += (a.respect_gain || 0);
+  });
+  const bucketKeys = Object.keys(buckets).sort((a,b) => a-b);
+  const bucketLabels = bucketKeys.map(k => {
+    const d = new Date(parseInt(k)*1000);
+    return bucketSize === 86400
+      ? d.toLocaleDateString([], {month:'short', day:'numeric'})
+      : d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  });
+
+  const hitsCtx = document.getElementById('hitsChart').getContext('2d');
+  charts.hits = new Chart(hitsCtx, {
+    type: 'bar',
+    data: {
+      labels: bucketLabels,
+      datasets: [{
+        label: 'Hits',
+        data: bucketKeys.map(k => buckets[k].count),
+        backgroundColor: 'rgba(0,255,170,0.25)',
+        borderColor: '#00ffaa',
+        borderWidth: 1, borderRadius: 3,
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color:'#5a6a7a', font:{size:10}, autoSkip:true } }, y: { ticks: { color:'#5a6a7a' }, beginAtZero:true } }
+    }
+  });
+  document.getElementById('hitsChartLabel').textContent = `${bucketLabel.toUpperCase()} BUCKETS`;
+
+  const respCtx = document.getElementById('respChart').getContext('2d');
+  charts.resp = new Chart(respCtx, {
+    type: 'line',
+    data: {
+      labels: bucketLabels,
+      datasets: [{
+        label: 'Respect',
+        data: bucketKeys.map(k => parseFloat(buckets[k].respect.toFixed(2))),
+        borderColor: '#ffb74a', backgroundColor: 'rgba(255,183,74,0.1)', borderWidth: 2,
+        pointRadius: 3, pointBackgroundColor: '#ffb74a', fill: true, tension: 0.4,
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color:'#5a6a7a', font:{size:10}, autoSkip:true } }, y: { ticks: { color:'#5a6a7a' }, beginAtZero:true } }
+    }
+  });
+  document.getElementById('respChartLabel').textContent = `${bucketLabel.toUpperCase()} BUCKETS`;
+
+  const outcomes = {};
+  attacks.forEach(a => {
+    const r = (a.result || 'Unknown');
+    outcomes[r] = (outcomes[r] || 0) + 1;
+  });
+  const outcomeColors = {
+    'Attacked': '#00ffaa', 'Hospitalised': '#00c87a', 'Assist': '#008a54', 'Mugged': '#4ab0ff',
+    'Lost': '#ff4a4a', 'Arrested': '#ff6e6e', 'Escape': '#ffb74a',
+    'Timeout': '#ff884a', 'Interrupted': '#ff994a', 'Special': '#a78bfa',
+  };
+  const oKeys = Object.keys(outcomes);
+  const oColors = oKeys.map(k => outcomeColors[k] || '#5a6a7a');
+
+  const outcomeCtx = document.getElementById('outcomeChart').getContext('2d');
+  charts.outcome = new Chart(outcomeCtx, {
+    type: 'doughnut',
+    data: { labels: oKeys, datasets: [{ data: oKeys.map(k => outcomes[k]), backgroundColor: oColors.map(c => c+'55'), borderColor: oColors, borderWidth: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false } } }
+  });
+
+  document.getElementById('outcomeLegend').innerHTML = oKeys.map((k,i) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-family:var(--mono);font-size:12px;">
+      <span style="width:10px;height:10px;border-radius:2px;background:${oColors[i]};flex-shrink:0;"></span>
+      <span style="color:var(--text)">${k}</span>
+      <span style="color:var(--text-dim);margin-left:auto">${outcomes[k]}</span>
+    </div>`).join('');
+
+  const highestResp = Math.max(...attacks.map(a => a.respect_gain || 0), 1);
+  const maxBound = Math.ceil(highestResp);
+  const binCount = 7;
+  const step = maxBound / binCount;
+  
+  const respBuckets = new Array(binCount).fill(0);
+  const respBucketLabels = [];
+  
+  for (let i = 0; i < binCount; i++) {
+    const low = (i * step).toFixed(1);
+    const high = ((i + 1) * step).toFixed(1);
+    respBucketLabels.push(`${low}–${high}`);
+  }
+
+  attacks.forEach(a => {
+    const r = a.respect_gain || 0;
+    let idx = Math.floor(r / step);
+    if (idx >= binCount) idx = binCount - 1;
+    respBuckets[idx]++;
+  });
+
+  const rdCtx = document.getElementById('respDistChart').getContext('2d');
+  charts.respDist = new Chart(rdCtx, {
+    type: 'bar',
+    data: {
+      labels: respBucketLabels,
+      datasets: [{
+        label: 'Hits',
+        data: respBuckets,
+        backgroundColor: 'rgba(0,255,170,0.3)',
+        borderColor: '#00ffaa',
+        borderWidth: 1, borderRadius: 3,
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color:'#5a6a7a', font:{size:10} } }, y: { ticks: { color:'#5a6a7a' }, beginAtZero:true } }
+    }
+  });
+
+  const targetResp = {};
+  const targetHits = {};
+  attacks.forEach(a => {
+    const name = (a.defender?.name || a.defender_id || 'Unknown');
+    const nameKey = String(name);
+    targetResp[nameKey] = (targetResp[nameKey] || 0) + (a.respect_gain || 0);
+    targetHits[nameKey] = (targetHits[nameKey] || 0) + 1;
+  });
+  const topTargets = Object.entries(targetResp).sort((a,b) => b[1]-a[1]).slice(0,15);
+  const maxRespTarget = topTargets[0]?.[1] || 1;
+  document.getElementById('targetBars').innerHTML = topTargets.map(([name, resp]) => `
+    <div class="rebar-row">
+      <div class="rebar-label" title="${name}">${name}</div>
+      <div class="rebar-track">
+        <div class="rebar-fill" style="width:${(resp/maxRespTarget*100).toFixed(1)}%"></div>
+      </div>
+      <div class="rebar-val">${resp.toFixed(2)}<span style="color:var(--text-dim)"> (${targetHits[name]})</span></div>
+    </div>`).join('');
+
+  document.getElementById('logCount').textContent = totalHits + ' ENTRIES';
+  const recentAttacks = [...attacks].reverse().slice(0, 200);
+  document.getElementById('logBody').innerHTML = recentAttacks.map(a => {
+    const outcome = a.result || 'Unknown';
+    const cls = resultClass(outcome);
+    const mods = [];
+    if (a.modifiers?.fair_fight > 1) mods.push('FF');
+    if (a.modifiers?.war) mods.push('WAR');
+    if (a.modifiers?.group && a.modifiers.group < 1) mods.push('GROUP');
+    const ff = a.modifiers?.fair_fight ? a.modifiers.fair_fight.toFixed(2) + 'x' : '—';
+    return `<tr>
+      <td>${formatTime(a.started)}</td>
+      <td>${a.defender?.name || a.defender_id || '—'}</td>
+      <td><span class="win-badge ${cls}">${outcome.toUpperCase()}</span></td>
+      <td style="color:var(--amber)">${(a.respect_gain || 0).toFixed(3)}</td>
+      <td style="color:var(--text-dim)">${mods.join(', ') || '—'}</td>
+      <td style="color:var(--text-dim)">${ff}</td>
+    </tr>`;
+  }).join('');
+
+  const pph = document.getElementById('payPerHit').value;
+  if (pph) document.getElementById('payPerHitCalc').value = pph;
+  recalcProfit();
+}
+
+function recalcProfit() {
+  if (!attackData.length) return;
+  const pph = parseFloat(document.getElementById('payPerHitCalc').value) || 0;
+  const bpw = parseFloat(document.getElementById('bonusPerWin').value) || 0;
+  
+  let paidHits = 0;
+  let bonusWins = 0;
+
+  attackData.forEach(a => {
+    const outcome = (a.result || '').toLowerCase();
+    let isCalculated = false;
+
+    if (outcome === 'attacked' || outcome === 'hospitalised' || outcome === 'special') {
+      isCalculated = true;
+      bonusWins++; 
+    } else if (outcome === 'mugged') {
+      if (activeProfitOutcomes.has('mugged')) isCalculated = true;
+      if (isCalculated) bonusWins++;
+    } else if (outcome === 'escape' || outcome === 'timeout' || outcome === 'interrupted') {
+      if (activeProfitOutcomes.has('escape')) isCalculated = true;
+    } else if (outcome === 'assist') {
+      if (activeProfitOutcomes.has('assist')) isCalculated = true;
+    } else if (outcome === 'lost' || outcome === 'arrested') {
+      if (activeProfitOutcomes.has('lost')) isCalculated = true;
+    }
+
+    if (isCalculated) paidHits++;
+  });
+
+  const totalHitsCount = attackData.length;
+  const wastedHitsCount = totalHitsCount - paidHits;
+
+  // Sync Total Hits W/L subtitle logic to the profit valid vs wasted count
+  document.getElementById('mHitsSub').textContent = `${paidHits}W / ${wastedHitsCount}L`;
+
+  const totalEnergySpent = totalHitsCount * 25;
+  const wastedEnergy = wastedHitsCount * 25;
+  const utilizedEnergy = paidHits * 25;
+
+  const wastedPercentage = totalEnergySpent ? ((wastedEnergy / totalEnergySpent) * 100).toFixed(1) : '0.0';
+  const utilizedPercentage = totalEnergySpent ? ((utilizedEnergy / totalEnergySpent) * 100).toFixed(1) : '0.0';
+
+  document.getElementById('mWastedEnergy').textContent = wastedEnergy.toLocaleString() + ' E';
+  document.getElementById('mWastedEnergySub').textContent = `${wastedPercentage}% (${wastedHitsCount} hits)`;
+  
+  document.getElementById('mUtilizedEnergy').textContent = utilizedEnergy.toLocaleString() + ' E';
+  document.getElementById('mUtilizedEnergySub').textContent = `${utilizedPercentage}% (${paidHits} hits)`;
+
+  const hitPay = pph * paidHits;
+  const winBonus = bpw * bonusWins;
+  const total = hitPay + winBonus;
+  
+  document.getElementById('profitValue').textContent = formatMoney(total);
+  document.getElementById('profitBreakdown').innerHTML =
+    `${paidHits.toLocaleString()} paid hits × ${formatMoney(pph)} = ${formatMoney(hitPay)}\n` +
+    (bpw ? `${bonusWins} qualifying wins × ${formatMoney(bpw)} bonus = ${formatMoney(winBonus)}\n` : '') +
+    `─────────────────────\nTotal: ${formatMoney(total)}`;
+}
+</script>
+</body>
+</html>
